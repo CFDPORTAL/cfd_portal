@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sheet Diagnostic</title>
+<style>
+  body { font-family: monospace; background: #111; color: #0f0; padding: 20px; font-size: 13px; }
+  pre { white-space: pre-wrap; word-break: break-all; background: #1a1a1a; padding: 12px; border-radius: 6px; border: 1px solid #333; }
+  button { background: #c0272d; border: none; color: white; padding: 10px 20px; border-radius: 6px; font-size: 14px; cursor: pointer; margin-bottom: 16px; }
+  .label { color: #d4af50; margin-top: 16px; margin-bottom: 4px; font-weight: bold; }
+</style>
+</head>
+<body>
+<h2 style="color:#d4af50;">CFD Sheet Diagnostic</h2>
+<button onclick="runTest()">▶ Fetch Settings Sheet</button>
+<div id="output"></div>
+
+<script>
+const SETTINGS_URL = 'https://docs.google.com/spreadsheets/d/17zN6Br3lxKhu_XxzE_o37h6V217hdxMN5HoBZVJC7c8/gviz/tq?tqx=out:json&gid=972073768';
+
+async function runTest() {
+  const out = document.getElementById('output');
+  out.innerHTML = '<div class="label">Fetching...</div>';
+  try {
+    const res = await fetch(SETTINGS_URL + '&t=' + Date.now());
+    const text = await res.text();
+
+    out.innerHTML += '<div class="label">Raw response (first 500 chars):</div>';
+    out.innerHTML += '<pre>' + text.substring(0, 500) + '</pre>';
+
+    const jsonStr = text.substring(text.indexOf('(') + 1, text.lastIndexOf(')'));
+    const json = JSON.parse(jsonStr);
+    const rows = json.table.rows;
+
+    out.innerHTML += '<div class="label">Number of rows: ' + rows.length + '</div>';
+    out.innerHTML += '<div class="label">Raw rows JSON:</div>';
+    out.innerHTML += '<pre>' + JSON.stringify(rows, null, 2) + '</pre>';
+
+    // Try both layouts
+    out.innerHTML += '<div class="label">Trying side-by-side (A=label, B=value):</div>';
+    for (const row of rows) {
+      if (!row.c || !row.c[0] || !row.c[0].v) continue;
+      out.innerHTML += '<pre>Col A: ' + JSON.stringify(row.c[0]) + '\nCol B: ' + JSON.stringify(row.c[1]) + '</pre>';
+    }
+
+  } catch(e) {
+    out.innerHTML += '<div class="label" style="color:red;">ERROR: ' + e.message + '</div>';
+  }
+}
+</script>
+</body>
+</html>
